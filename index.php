@@ -40,10 +40,10 @@ $isConsole = (php_sapi_name() === 'cli');
 function is_wget_available() {
     if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
         $null = 'NUL';
-        exec('where wget > ' . $null . ' 2> ' . $null, $output, $return_var);
+        exec('where wget > ' . escapeshellarg($null) . ' 2> ' . escapeshellarg($null), $output, $return_var);
     } else {
         $null = '/dev/null';
-        exec('which wget > ' . $null . ' 2> ' . $null, $output, $return_var);
+        exec('which wget > ' . escapeshellarg($null) . ' 2> ' . escapeshellarg($null), $output, $return_var);
     }
     return $return_var === 0;
 }
@@ -119,26 +119,29 @@ function curl_post_json($ch, $url, $data) {
 
 function download_file($ch, $url, $save_path, $is_bunkr = true, $referer = '') {
     global $wget_available;
-    
+
+    // Sanitize file path for shell usage
+    $save_path_safe = escapeshellarg($save_path);
+    $url_safe = escapeshellarg($url);
+    $referer_safe = escapeshellarg($referer ?: 'https://bunkr.sk/');
+    $user_agent_safe = escapeshellarg(DEFAULT_USER_AGENT);
+
     if (file_exists($save_path)) {
         $file_size = filesize($save_path);
         return ["success" => true, "size" => $file_size, "message" => "File already exists, skipped download"];
     }
-    
+
     if ($wget_available) {
-        $user_agent = DEFAULT_USER_AGENT;
-        $ref = $referer ?: 'https://bunkr.sk/';
-        
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-            $wget_cmd = sprintf('wget --quiet --show-progress --no-check-certificate --user-agent="%s" --referer="%s" "%s" -O "%s"', 
-                $user_agent, $ref, $url, $save_path);
+            $wget_cmd = 'wget --quiet --show-progress --no-check-certificate --user-agent=' . $user_agent_safe .
+                ' --referer=' . $referer_safe . ' ' . $url_safe . ' -O ' . $save_path_safe;
         } else {
-            $wget_cmd = sprintf("wget --quiet --show-progress --no-check-certificate --user-agent='%s' --referer='%s' '%s' -O '%s'", 
-                $user_agent, $ref, $url, $save_path);
+            $wget_cmd = "wget --quiet --show-progress --no-check-certificate --user-agent=" . $user_agent_safe .
+                " --referer=" . $referer_safe . " " . $url_safe . " -O " . $save_path_safe;
         }
-        
+
         exec($wget_cmd, $output, $return_var);
-        
+
         if ($return_var === 0 && file_exists($save_path)) {
             $file_size = filesize($save_path);
             if ($file_size > 0) {
@@ -340,7 +343,7 @@ function get_items_list($ch, $url, $retries = 10, $extensions = null, $only_expo
         $error_code = curl_errno($ch);
         $error_msg = "Failed to fetch the Bunkr page. Error: " . curl_error($ch) . " (Code: $error_code)";
         if ($isConsole) {
-            echo "$error_msg\n";
+            echo htmlspecialchars($error_msg, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "\n";
         } else {
             echo "<div class='error'>" . htmlspecialchars($error_msg, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</div>";
         }
@@ -392,7 +395,7 @@ function get_items_list($ch, $url, $retries = 10, $extensions = null, $only_expo
     
     if (empty($items)) {
         if ($isConsole) {
-            echo "No items found in the provided URL\n";
+            echo htmlspecialchars("No items found in the provided URL", ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "\n";
         } else {
             echo "<div class='error'>No items found in the provided URL</div>";
         }
@@ -404,7 +407,7 @@ function get_items_list($ch, $url, $retries = 10, $extensions = null, $only_expo
     if (!is_writable($download_path)) {
         $error_msg = "Download directory is not writable: " . $download_path;
         if ($isConsole) {
-            echo "$error_msg\n";
+            echo htmlspecialchars($error_msg, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "\n";
         } else {
             echo "<div class='error'>" . htmlspecialchars($error_msg, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</div>";
         }
@@ -417,8 +420,8 @@ function get_items_list($ch, $url, $retries = 10, $extensions = null, $only_expo
     $fail_count = 0;
     
     if ($isConsole) {
-        echo "Found " . count($items) . " items in album \"$album_name\"\n";
-        echo "Saving to: $download_path\n\n";
+        echo htmlspecialchars("Found " . count($items) . " items in album \"$album_name\"", ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "\n";
+        echo htmlspecialchars("Saving to: $download_path", ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "\n\n";
     } else {
         echo "<h2>Album: " . htmlspecialchars($album_name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</h2>";
         echo "<p>Found " . count($items) . " items</p>";
@@ -439,7 +442,7 @@ function get_items_list($ch, $url, $retries = 10, $extensions = null, $only_expo
             if ($download_item === null) {
                 $fail_count++;
                 if ($isConsole) {
-                    echo "Unable to find a download link for " . $item['url'] . "\n";
+                    echo htmlspecialchars("Unable to find a download link for " . $item['url'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "\n";
                 } else {
                     echo "<div class='error'>Unable to find a download link for " . htmlspecialchars($item['url'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</div>";
                 }
@@ -474,8 +477,8 @@ function get_items_list($ch, $url, $retries = 10, $extensions = null, $only_expo
             $downloaded = false;
             for ($i = 1; $i <= $retries; $i++) {
                 if ($isConsole) {
-                    echo "Downloading $file_name (try $i/$retries)... ";
-                    echo $item['url'] . "\n";
+                    echo htmlspecialchars("Downloading $file_name (try $i/$retries)... ", ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                    echo htmlspecialchars($item['url'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "\n";
                 } else {
                     echo "<div class='file-progress'>";
                     echo "<span>Downloading: " . htmlspecialchars($file_name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . " (try $i/$retries)</span>";
@@ -492,7 +495,7 @@ function get_items_list($ch, $url, $retries = 10, $extensions = null, $only_expo
                     $method_msg = isset($result['method']) ? " (using " . $result['method'] . ")" : "";
                     
                     if ($isConsole) {
-                        echo $status_msg . $method_msg . "\n";
+                        echo htmlspecialchars($status_msg . $method_msg, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "\n";
                     } else {
                         echo "<span class='success'>" . htmlspecialchars($status_msg, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . htmlspecialchars($method_msg, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</span>";
                         echo "</div>";
@@ -500,7 +503,7 @@ function get_items_list($ch, $url, $retries = 10, $extensions = null, $only_expo
                     break;
                 } else {
                     if ($isConsole) {
-                        echo "Failed: " . $result['error'] . "\n";
+                        echo htmlspecialchars("Failed: " . $result['error'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "\n";
                     } else {
                         echo "<span class='error'>" . htmlspecialchars($result['error'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</span>";
                         echo "</div>";
@@ -518,10 +521,10 @@ function get_items_list($ch, $url, $retries = 10, $extensions = null, $only_expo
     
     if (!$only_export) {
         if ($isConsole) {
-            echo "\nDownload completed!\n";
-            echo "Successes: $success_count\n";
-            echo "Failures: $fail_count\n";
-            echo "Files saved to: $download_path\n";
+            echo htmlspecialchars("\nDownload completed!", ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "\n";
+            echo htmlspecialchars("Successes: $success_count", ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "\n";
+            echo htmlspecialchars("Failures: $fail_count", ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "\n";
+            echo htmlspecialchars("Files saved to: $download_path", ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "\n";
         } else {
             echo "</div>";
             echo "<div class='summary'>";
@@ -534,7 +537,7 @@ function get_items_list($ch, $url, $retries = 10, $extensions = null, $only_expo
     } else {
         $message = "URL list exported to {$download_path}/url_list.txt";
         if ($isConsole) {
-            echo $message . "\n";
+            echo htmlspecialchars($message, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "\n";
         } else {
             echo "<div class='success'>" . htmlspecialchars($message, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</div>";
         }
@@ -568,16 +571,26 @@ $only_export = false;
 
 if ($isConsole) {
     $options = getopt("u:f:r:e:p:w");
-    
+
     if (isset($options['u'])) {
-        $bunkrUrl = $options['u'];
+        $bunkrUrl = sanitize_url($options['u']);
+        if ($bunkrUrl === false) {
+            echo htmlspecialchars("Invalid URL provided.", ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "\n";
+            exit(1);
+        }
     } elseif (isset($options['f'])) {
-        $file_path = $options['f'];
+        $file_path = sanitize_path($options['f']);
         if (file_exists($file_path)) {
-            $urls = explode("\n", file_get_contents($file_path));
+            $urls = [];
+            foreach (explode("\n", file_get_contents($file_path)) as $url) {
+                $url = sanitize_url($url);
+                if ($url !== false) {
+                    $urls[] = $url;
+                }
+            }
             echo "Found " . count($urls) . " URLs in file.\n";
         } else {
-            echo "File not found: $file_path\n";
+            echo "File not found: " . htmlspecialchars($file_path, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "\n";
             exit(1);
         }
     } else {
@@ -585,19 +598,30 @@ if ($isConsole) {
         echo "   or: php index.php -f <file_with_urls> [-r retries] [-e extensions] [-p custom_path] [-w]\n";
         exit(1);
     }
-    
+
     if (isset($options['r'])) $retries = (int)$options['r'];
     if (isset($options['e'])) $extensions = $options['e'];
-    if (isset($options['p'])) $custom_path = $options['p'];
+    if (isset($options['p'])) $custom_path = sanitize_path($options['p']);
     if (isset($options['w'])) $only_export = true;
 } elseif (isset($_POST['bunkr'])) {
-    $bunkrUrl = filter_var($_POST['bunkr'], FILTER_SANITIZE_URL);
+    $bunkrUrl = sanitize_url($_POST['bunkr']);
+    if ($bunkrUrl === false) {
+        if (!$isConsole) {
+            echo "<div class='error'>Invalid URL provided.</div>";
+        } else {
+            echo htmlspecialchars("Invalid URL provided.", ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "\n";
+        }
+        exit(1);
+    }
     if (isset($_POST['retries'])) $retries = min(50, max(1, (int)$_POST['retries']));
     if (isset($_POST['extensions'])) $extensions = trim(preg_replace('/[^a-zA-Z0-9,]/', '', $_POST['extensions']));
     if (isset($_POST['custom_path'])) {
-        $custom_path = realpath(trim($_POST['custom_path']));
-        if ($custom_path === false || strpos($custom_path, realpath(__DIR__)) !== 0) {
+        $custom_path = sanitize_path($_POST['custom_path']);
+        $custom_path_real = realpath($custom_path);
+        if ($custom_path_real === false || strpos($custom_path_real, realpath(__DIR__)) !== 0) {
             $custom_path = __DIR__ . '/downloads';
+        } else {
+            $custom_path = $custom_path_real;
         }
     }
     if (isset($_POST['only_export'])) $only_export = ($_POST['only_export'] == '1');
@@ -615,7 +639,7 @@ if (!empty($bunkrUrl) || (isset($urls) && !empty($urls))) {
                 if (empty($url)) continue;
                 
                 if ($isConsole) {
-                    echo "\nProcessing: $url\n";
+                    echo htmlspecialchars("\nProcessing: $url", ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "\n";
                 } else {
                     echo "<h3>Processing: " . htmlspecialchars($url, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</h3>";
                 }
@@ -631,13 +655,12 @@ if (!empty($bunkrUrl) || (isset($urls) && !empty($urls))) {
         }
     } catch (Exception $e) {
         if ($isConsole) {
-            echo "Error: " . $e->getMessage() . "\n";
+            echo htmlspecialchars("Error: " . $e->getMessage(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "\n";
         } else {
             echo "<div class='error'>Error: " . htmlspecialchars($e->getMessage(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</div>";
             echo "<div class='navigation'><a href='index.php'>Back to Download Form</a></div>";
         }
     }
-    
     exit(0);
 }
 
