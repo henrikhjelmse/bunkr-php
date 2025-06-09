@@ -654,12 +654,15 @@ if (!empty($bunkrUrl) || (isset($urls) && !empty($urls))) {
             echo "<div class='navigation'><a href='index.php'>Back to Download Form</a></div>";
         }
     } catch (Exception $e) {
+        $generic_error = "An error occurred. Please try again later.";
         if ($isConsole) {
-            echo htmlspecialchars("Error: " . $e->getMessage(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "\n";
+            echo htmlspecialchars("Error: " . $generic_error, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "\n";
         } else {
-            echo "<div class='error'>Error: " . htmlspecialchars($e->getMessage(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</div>";
+            echo "<div class='error'>Error: " . htmlspecialchars($generic_error, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</div>";
             echo "<div class='navigation'><a href='index.php'>Back to Download Form</a></div>";
         }
+        // Optionally log the real error for admins:
+        error_log($e->getMessage());
     }
     exit(0);
 }
