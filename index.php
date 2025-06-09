@@ -331,7 +331,7 @@ function get_items_list($ch, $url, $retries = 10, $extensions = null, $only_expo
     $extensions_list = $extensions ? explode(',', $extensions) : [];
     
     if (!$isConsole) {
-        echo "<div class='debug'>Processing URL: " . htmlspecialchars($url) . "</div>";
+        echo "<div class='debug'>Processing URL: " . htmlspecialchars($url, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</div>";
     }
     
     $response = curl_get_contents($ch, $url);
@@ -342,7 +342,7 @@ function get_items_list($ch, $url, $retries = 10, $extensions = null, $only_expo
         if ($isConsole) {
             echo "$error_msg\n";
         } else {
-            echo "<div class='error'>$error_msg</div>";
+            echo "<div class='error'>" . htmlspecialchars($error_msg, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</div>";
         }
         return ['success' => false, 'message' => $error_msg];
     }
@@ -406,7 +406,7 @@ function get_items_list($ch, $url, $retries = 10, $extensions = null, $only_expo
         if ($isConsole) {
             echo "$error_msg\n";
         } else {
-            echo "<div class='error'>$error_msg</div>";
+            echo "<div class='error'>" . htmlspecialchars($error_msg, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</div>";
         }
         return ['success' => false, 'message' => $error_msg];
     }
@@ -420,7 +420,7 @@ function get_items_list($ch, $url, $retries = 10, $extensions = null, $only_expo
         echo "Found " . count($items) . " items in album \"$album_name\"\n";
         echo "Saving to: $download_path\n\n";
     } else {
-        echo "<h2>Album: " . htmlspecialchars($album_name) . "</h2>";
+        echo "<h2>Album: " . htmlspecialchars($album_name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</h2>";
         echo "<p>Found " . count($items) . " items</p>";
         echo "<div class='download-progress'>";
     }
@@ -441,7 +441,7 @@ function get_items_list($ch, $url, $retries = 10, $extensions = null, $only_expo
                 if ($isConsole) {
                     echo "Unable to find a download link for " . $item['url'] . "\n";
                 } else {
-                    echo "<div class='error'>Unable to find a download link for " . htmlspecialchars($item['url']) . "</div>";
+                    echo "<div class='error'>Unable to find a download link for " . htmlspecialchars($item['url'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</div>";
                 }
                 continue;
             }
@@ -478,7 +478,7 @@ function get_items_list($ch, $url, $retries = 10, $extensions = null, $only_expo
                     echo $item['url'] . "\n";
                 } else {
                     echo "<div class='file-progress'>";
-                    echo "<span>Downloading: " . htmlspecialchars($file_name) . " (try $i/$retries)</span>";
+                    echo "<span>Downloading: " . htmlspecialchars($file_name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . " (try $i/$retries)</span>";
                 }
                 
                 $result = download_file($ch, $item['url'], $save_path, $is_bunkr, $url);
@@ -494,7 +494,7 @@ function get_items_list($ch, $url, $retries = 10, $extensions = null, $only_expo
                     if ($isConsole) {
                         echo $status_msg . $method_msg . "\n";
                     } else {
-                        echo "<span class='success'>" . htmlspecialchars($status_msg) . $method_msg . "</span>";
+                        echo "<span class='success'>" . htmlspecialchars($status_msg, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . htmlspecialchars($method_msg, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</span>";
                         echo "</div>";
                     }
                     break;
@@ -502,7 +502,7 @@ function get_items_list($ch, $url, $retries = 10, $extensions = null, $only_expo
                     if ($isConsole) {
                         echo "Failed: " . $result['error'] . "\n";
                     } else {
-                        echo "<span class='error'>" . htmlspecialchars($result['error']) . "</span>";
+                        echo "<span class='error'>" . htmlspecialchars($result['error'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</span>";
                         echo "</div>";
                     }
                     
@@ -528,7 +528,7 @@ function get_items_list($ch, $url, $retries = 10, $extensions = null, $only_expo
             echo "<p>Download completed!</p>";
             echo "<p>Successfully downloaded: $success_count files</p>";
             echo "<p>Failed: $fail_count files</p>";
-            echo "<p>Files saved to: " . htmlspecialchars($download_path) . "</p>";
+            echo "<p>Files saved to: " . htmlspecialchars($download_path, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</p>";
             echo "</div>";
         }
     } else {
@@ -536,7 +536,7 @@ function get_items_list($ch, $url, $retries = 10, $extensions = null, $only_expo
         if ($isConsole) {
             echo $message . "\n";
         } else {
-            echo "<div class='success'>$message</div>";
+            echo "<div class='success'>" . htmlspecialchars($message, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</div>";
         }
     }
     
@@ -617,7 +617,7 @@ if (!empty($bunkrUrl) || (isset($urls) && !empty($urls))) {
                 if ($isConsole) {
                     echo "\nProcessing: $url\n";
                 } else {
-                    echo "<h3>Processing: " . htmlspecialchars($url) . "</h3>";
+                    echo "<h3>Processing: " . htmlspecialchars($url, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</h3>";
                 }
                 
                 get_items_list($ch, $url, $retries, $extensions, $only_export, $custom_path, $isConsole);
@@ -633,7 +633,7 @@ if (!empty($bunkrUrl) || (isset($urls) && !empty($urls))) {
         if ($isConsole) {
             echo "Error: " . $e->getMessage() . "\n";
         } else {
-            echo "<div class='error'>Error: " . htmlspecialchars($e->getMessage()) . "</div>";
+            echo "<div class='error'>Error: " . htmlspecialchars($e->getMessage(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</div>";
             echo "<div class='navigation'><a href='index.php'>Back to Download Form</a></div>";
         }
     }
