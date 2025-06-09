@@ -474,7 +474,7 @@ function get_items_list($ch, $url, $retries = 10, $extensions = null, $only_expo
         
         $file_name = isset($item['name']) && !$is_bunkr ? $item['name'] : $url_data['file_name'];
         $file_name = preg_replace('/[^\w\.-]/', '_', $file_name);
-        if (empty($file_name)) $file_name = 'file_' . md5($item['url']) . $extension;
+        if (empty($file_name)) $file_name = 'file_' . hash('sha256', $item['url']) . $extension;
         
         $save_path = $download_path . '/' . $file_name;
         
