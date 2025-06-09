@@ -66,6 +66,10 @@ function create_session() {
 }
 
 function curl_get_contents($ch, $url, $cookies = [], $referer = '') {
+    // Only allow http(s) URLs to mitigate SSRF
+    if (!preg_match('#^https?://#i', $url)) {
+        return false;
+    }
     curl_setopt($ch, CURLOPT_URL, $url);
     
     if (!empty($cookies)) {
@@ -92,6 +96,10 @@ function curl_get_contents($ch, $url, $cookies = [], $referer = '') {
 }
 
 function curl_post_json($ch, $url, $data) {
+    // Only allow http(s) URLs to mitigate SSRF
+    if (!preg_match('#^https?://#i', $url)) {
+        return false;
+    }
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
